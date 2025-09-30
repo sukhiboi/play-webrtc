@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC Chat App</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .section {
+            margin: 10px 0;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        h3 {
+            margin: 10px 0;
+            color: #555;
+            font-size: 16px;
+        }
+        textarea {
+            width: 100%;
+            height: 80px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 11px;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        input[type="text"] {
+            width: calc(100% - 10px);
+            padding: 10px;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px 5px 5px 0;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .chat-area {
+            grid-column: 1 / -1;
+            background-color: white;
+        }
+        .messages {
+            background-color: #f5f5f5;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+        .message {
+            margin: 8px 0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            max-width: 70%;
+        }
+        .message.sent {
+            background-color: #dcf8c6;
+            margin-left: auto;
+            text-align: right;
+        }
+        .message.received {
+            background-color: #fff;
+            border: 1px solid #ddd;
+        }
+        .message .time {
+            font-size: 10px;
+            color: #666;
+            margin-top: 4px;
+        }
+        .info {
+            color: #666;
+            font-size: 12px;
+            font-style: italic;
+            text-align: center;
+            padding: 5px;
+        }
+        .status {
+            padding: 8px;
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+        .qr-container {
+            text-align: center;
+            padding: 15px;
+            background-color: white;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .qr-code {
+            display: inline-block;
+            padding: 10px;
+            background: white;
+        }
+        .qr-code canvas {
+            display: block;
+            margin: 0 auto;
+        }
+        .hidden {
+            display: none;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .tab-btn.active {
+            background-color: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .shareable-link {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 11px;
+            margin: 10px 0;
+        }
+        .link-section {
+            margin: 15px 0;
+        }
+        .copy-link-btn {
+            background-color: #2196F3;
+        }
+        .copy-link-btn:hover {
+            background-color: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebRTC P2P Chat App</h1>
+
+    <div class="container">
+        <!-- Left Column: Create Offer -->
+        <div>
+            <div class="section">
+                <h2>Person A: Create Offer</h2>
+                <h3>1. Create Your Offer</h3>
+                <button id="createOfferBtn">Create Offer</button>
+
+                <div class="link-section" id="offerLinkSection" style="display: none;">
+                    <h4 style="margin: 10px 0 5px 0; font-size: 14px;">Share this link with Person B:</h4>
+                    <div class="shareable-link" id="offerLink">Link will appear here...</div>
+                    <button class="copy-link-btn" id="copyOfferLinkBtn">Copy Link</button>
+                </div>
+
+                <div class="tab-buttons" id="offerTabs" style="display: none;">
+                    <button class="tab-btn active" onclick="switchTab('offer', 'qr')">QR Code</button>
+                    <button class="tab-btn" onclick="switchTab('offer', 'json')">JSON (Advanced)</button>
+                </div>
+
+                <div id="offer-qr" class="tab-content active">
+                    <div class="qr-container">
+                        <div id="offerQR" class="qr-code"></div>
+                        <p style="font-size: 12px; color: #666; margin-top: 10px;">Scan with Person B's device</p>
+                    </div>
+                </div>
+
+                <div id="offer-json" class="tab-content">
+                    <textarea id="offerOutput" readonly placeholder="Your offer JSON will appear here..."></textarea>
+                    <button id="copyOfferBtn" disabled>Copy Offer JSON</button>
+                </div>
+
+                <h3>3. Paste Answer from Person B</h3>
+                <textarea id="answerInput" placeholder="Paste the answer JSON from Person B here..."></textarea>
+                <button id="applyAnswerBtn">Apply Answer</button>
+            </div>
+        </div>
+
+        <!-- Right Column: Receive Offer -->
+        <div>
+            <div class="section">
+                <h2>Person B: Receive Offer</h2>
+                <h3>2. Paste Offer from Person A</h3>
+                <textarea id="offerInput" placeholder="Paste the offer JSON from Person A here..."></textarea>
+                <button id="processOfferBtn">Process Offer & Create Answer</button>
+
+                <h3>Answer (Send to Person A)</h3>
+
+                <div class="link-section" id="answerLinkSection" style="display: none;">
+                    <h4 style="margin: 10px 0 5px 0; font-size: 14px;">Share this link with Person A:</h4>
+                    <div class="shareable-link" id="answerLink">Link will appear here...</div>
+                    <button class="copy-link-btn" id="copyAnswerLinkBtn">Copy Link</button>
+                </div>
+
+                <div class="tab-buttons" id="answerTabs" style="display: none;">
+                    <button class="tab-btn active" onclick="switchTab('answer', 'qr')">QR Code</button>
+                    <button class="tab-btn" onclick="switchTab('answer', 'json')">JSON (Advanced)</button>
+                </div>
+
+                <div id="answer-qr" class="tab-content active">
+                    <div class="qr-container">
+                        <div id="answerQR" class="qr-code"></div>
+                        <p style="font-size: 12px; color: #666; margin-top: 10px;">Scan with Person A's device</p>
+                    </div>
+                </div>
+
+                <div id="answer-json" class="tab-content">
+                    <textarea id="answerOutput" readonly placeholder="Your answer JSON will appear here..."></textarea>
+                    <button id="copyAnswerBtn" disabled>Copy Answer JSON</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Full Width: Chat Area -->
+        <div class="chat-area">
+            <div class="section">
+                <h2>Chat</h2>
+                <div class="status" id="status">Not connected. Complete the WebRTC handshake above to start chatting.</div>
+                <div class="messages" id="messages"></div>
+                <input type="text" id="messageInput" placeholder="Type your message..." disabled>
+                <button id="sendBtn" disabled>Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="webrtc.js"></script>
+</body>
+</html>
