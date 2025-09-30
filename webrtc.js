@@ -163,10 +163,6 @@ class WebRTCChat {
             const offer = await this.peerConnection.createOffer();
             await this.peerConnection.setLocalDescription(offer);
 
-            // Save offer to localStorage for later answer processing
-            localStorage.setItem('webrtc_offer', JSON.stringify(offer));
-            localStorage.setItem('webrtc_role', 'offerer');
-
             this.updateStatus('Gathering connection info...');
         } catch (error) {
             this.updateStatus('Error creating offer: ' + error.message, 'error');
@@ -239,49 +235,8 @@ class WebRTCChat {
                 throw new Error('Invalid data: expected an answer');
             }
 
-            // Check if peer connection exists
-            if (!this.peerConnection) {
-                // Try to restore from localStorage
-                const savedOffer = localStorage.getItem('webrtc_offer');
-                const savedRole = localStorage.getItem('webrtc_role');
-
-                if (!savedOffer || savedRole !== 'offerer') {
-                    throw new Error('No offer found. Please create an offer first, then apply the answer without refreshing the page.');
-                }
-
-                // Restore peer connection with saved offer
-                this.updateStatus('Restoring connection from saved offer...');
-                this.isOfferer = true;
-                this.initPeerConnection();
-
-                // Create data channel
-                this.dataChannel = this.peerConnection.createDataChannel('chat');
-                this.setupDataChannel();
-
-                // Re-apply the saved offer
-                const offer = JSON.parse(savedOffer);
-                await this.peerConnection.setLocalDescription(offer);
-
-                // Wait for ICE gathering
-                await new Promise((resolve) => {
-                    if (this.peerConnection.iceGatheringState === 'complete') {
-                        resolve();
-                    } else {
-                        this.peerConnection.addEventListener('icegatheringstatechange', () => {
-                            if (this.peerConnection.iceGatheringState === 'complete') {
-                                resolve();
-                            }
-                        }, { once: true });
-                    }
-                });
-            }
-
             this.updateStatus('Applying answer and connecting...');
             await this.peerConnection.setRemoteDescription(new RTCSessionDescription(data));
-
-            // Clear localStorage after successful connection
-            localStorage.removeItem('webrtc_offer');
-            localStorage.removeItem('webrtc_role');
         } catch (error) {
             this.updateStatus('Error: ' + error.message, 'error');
             alert('Error applying answer: ' + error.message);
