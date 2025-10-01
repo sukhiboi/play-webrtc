@@ -19,8 +19,8 @@ export class QRManager {
         // Create new QR code with settings optimized for scanning
         this.qrCodeInstance = new QRCode(element, {
             text: jsonString,
-            width: 350,  // Larger size for better scanning
-            height: 350,
+            width: 500,  // Larger size for better scanning
+            height: 500,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.L  // Low error correction = bigger bars
