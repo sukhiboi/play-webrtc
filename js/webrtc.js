@@ -87,8 +87,8 @@ export class WebRTCManager {
         const offer = await this.peerConnection.createOffer();
         await this.peerConnection.setLocalDescription(offer);
 
-        // Wait for ICE gathering to complete
-        await this.waitForIceGathering();
+        // Wait briefly for initial ICE candidates (smaller QR codes)
+        await this.waitForInitialCandidates(500);
 
         // Package offer with metadata (minimal data for smaller QR)
         return {
@@ -117,8 +117,8 @@ export class WebRTCManager {
         const answer = await this.peerConnection.createAnswer();
         await this.peerConnection.setLocalDescription(answer);
 
-        // Wait for ICE gathering to complete
-        await this.waitForIceGathering();
+        // Wait briefly for initial ICE candidates (smaller QR codes)
+        await this.waitForInitialCandidates(500);
 
         // Package answer with metadata (minimal data for smaller QR)
         return {
@@ -134,20 +134,37 @@ export class WebRTCManager {
         await this.peerConnection.setRemoteDescription(new RTCSessionDescription(answerData.sdp));
     }
 
-    // Wait for ICE gathering to complete
-    waitForIceGathering() {
+    // Wait for initial ICE candidates (with timeout for smaller QR codes)
+    waitForInitialCandidates(timeoutMs = 500) {
         return new Promise((resolve) => {
+            // If already complete, resolve immediately
             if (this.peerConnection.iceGatheringState === 'complete') {
                 resolve();
-            } else {
-                const checkState = () => {
-                    if (this.peerConnection.iceGatheringState === 'complete') {
-                        this.peerConnection.removeEventListener('icegatheringstatechange', checkState);
-                        resolve();
-                    }
-                };
-                this.peerConnection.addEventListener('icegatheringstatechange', checkState);
+                return;
             }
+
+            // Wait for either completion or timeout
+            let resolved = false;
+
+            const checkState = () => {
+                if (!resolved && this.peerConnection.iceGatheringState === 'complete') {
+                    resolved = true;
+                    this.peerConnection.removeEventListener('icegatheringstatechange', checkState);
+                    resolve();
+                }
+            };
+
+            this.peerConnection.addEventListener('icegatheringstatechange', checkState);
+
+            // Timeout to generate QR code early (smaller QR, faster UX)
+            setTimeout(() => {
+                if (!resolved) {
+                    resolved = true;
+                    this.peerConnection.removeEventListener('icegatheringstatechange', checkState);
+                    console.log('Generating QR with partial ICE candidates for smaller size');
+                    resolve();
+                }
+            }, timeoutMs);
         });
     }
 
