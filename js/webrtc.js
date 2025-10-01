@@ -90,12 +90,11 @@ export class WebRTCManager {
         // Wait for ICE gathering to complete
         await this.waitForIceGathering();
 
-        // Package offer with metadata
+        // Package offer with metadata (minimal data for smaller QR)
         return {
             type: 'offer',
             username: username,
-            sdp: this.peerConnection.localDescription,
-            timestamp: Date.now()
+            sdp: this.peerConnection.localDescription
         };
     }
 
@@ -121,12 +120,11 @@ export class WebRTCManager {
         // Wait for ICE gathering to complete
         await this.waitForIceGathering();
 
-        // Package answer with metadata
+        // Package answer with metadata (minimal data for smaller QR)
         return {
             type: 'answer',
             username: username,
-            sdp: this.peerConnection.localDescription,
-            timestamp: Date.now()
+            sdp: this.peerConnection.localDescription
         };
     }
 

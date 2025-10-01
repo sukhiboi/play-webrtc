@@ -106,7 +106,7 @@
 
         .qr-container {
             text-align: center;
-            padding: 20px;
+            padding: 10px 2px;
             background: #f7fafc;
             border-radius: 10px;
             margin: 15px 0;
@@ -118,8 +118,22 @@
         }
 
         #qrcode {
-            display: inline-block;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             margin: 10px 0;
+            width: 100%;
+        }
+
+        #qrcode img {
+            width: 100% !important;
+            height: auto !important;
+            max-width: 100% !important;
+        }
+
+        #qrcode canvas {
+            width: 100% !important;
+            height: auto !important;
         }
 
         .json-toggle {
@@ -353,6 +367,7 @@
     <!-- External Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 
     <!-- App Scripts -->
     <script type="module" src="js/app.js"></script>
