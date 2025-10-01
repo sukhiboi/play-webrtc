@@ -13,17 +13,17 @@ export class QRManager {
         const element = document.getElementById(elementId);
         element.innerHTML = '';
 
-        // Convert data to JSON string
+        // Convert data to JSON string (minified, no spaces)
         const jsonString = JSON.stringify(data);
 
-        // Create new QR code
+        // Create new QR code with settings optimized for scanning
         this.qrCodeInstance = new QRCode(element, {
             text: jsonString,
-            width: 250,
-            height: 250,
+            width: 350,  // Larger size for better scanning
+            height: 350,
             colorDark: "#000000",
             colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.M
+            correctLevel: QRCode.CorrectLevel.L  // Low error correction = bigger bars
         });
 
         return jsonString;
